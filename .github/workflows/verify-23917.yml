@@ -39,6 +39,7 @@ jobs:
           cp patches/chokidar@3.6.0.patch "$RUNNER_TEMP/fixed-chokidar.patch"
           git show cce559ab158cc6b177d0911a0bea73436b48faff:patches/chokidar@3.6.0.patch > patches/chokidar@3.6.0.patch
           pnpm install --no-frozen-lockfile --filter vite... --filter @vitejs/vite-monorepo
+          pnpm --filter vite build-bundle
           set +e
           pnpm test-unit packages/vite/src/node/server/__tests__/watcher-inode.spec.ts > baseline-regression.log 2>&1
           result=$?

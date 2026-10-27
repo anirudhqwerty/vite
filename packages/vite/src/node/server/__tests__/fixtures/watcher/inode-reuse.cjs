@@ -23,6 +23,13 @@ async function test() {
   const watcher = chokidar.watch(file, { usePolling: false })
   const changes = []
   watcher.on('change', () => changes.push(fs.readFileSync(file, 'utf8')))
+  async function expectChange(content, message) {
+    const deadline = Date.now() + 3000
+    while (!changes.includes(content) && Date.now() < deadline) {
+      await sleep(20)
+    }
+    assert.ok(changes.includes(content), message)
+  }
 
   try {
     await new Promise((resolve, reject) => {
@@ -34,12 +41,10 @@ async function test() {
     fs.unlinkSync(file)
     fs.writeFileSync(file, 'replacement')
     assert.notEqual(fs.statSync(file).birthtimeMs, birthtime)
-    await sleep(300)
-    assert.ok(changes.includes('replacement'), 'replacement must be detected')
+    await expectChange('replacement', 'replacement must be detected')
     fs.writeFileSync(file, 'edited after replacement')
-    await sleep(300)
-    assert.ok(
-      changes.includes('edited after replacement'),
+    await expectChange(
+      'edited after replacement',
       'native watcher must stay attached after inode reuse',
     )
   } finally {

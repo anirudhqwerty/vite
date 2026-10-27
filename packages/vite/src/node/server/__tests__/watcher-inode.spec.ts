@@ -10,7 +10,11 @@ it.runIf(process.platform === 'linux')(
   async () => {
     await promisify(execFile)(
       process.execPath,
-      [fileURLToPath(new URL('./fixtures/watcher/inode-reuse.cjs', import.meta.url))],
+      [
+        fileURLToPath(
+          new URL('./fixtures/watcher/inode-reuse.cjs', import.meta.url),
+        ),
+      ],
       { timeout: 10_000 },
     )
   },

@@ -21,7 +21,6 @@ index 8752893ca4986cf05103a46c438223b7ee4e1907..9185d79f6ee5194bf259dd252b8105d9
    if (!list) {
      list = [];
 diff --git a/lib/nodefs-handler.js b/lib/nodefs-handler.js
-index 5385d00..a9310ad 100644
 --- a/lib/nodefs-handler.js
 +++ b/lib/nodefs-handler.js
 @@ -369,7 +369,10 @@ _handleFile(file, stats, initialAdd) {

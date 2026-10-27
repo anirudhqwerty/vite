@@ -7,7 +7,7 @@ import { setTimeout as sleep } from 'node:timers/promises'
 import { createServer, version } from '../packages/vite/dist/node/index.js'
 
 const mode = process.env.MODE ?? 'baseline'
-const work = fs.mkdtempSync(path.join(os.tmpdir(), 'vite-23917-'))
+const work = fs.mkdtempSync(path.join(process.env.REPRO_TMPDIR ?? os.tmpdir(), 'vite-23917-'))
 const file = path.join(work, 'shared/a.js')
 const git = (...args) => execFileSync('git', [
   '-c', 'user.name=Test Fixture', '-c', 'user.email=fixture@example.invalid', ...args,
@@ -27,7 +27,7 @@ async function scenario(control) {
   git('reset', '-q', '--hard', 'HEAD~1')
   const server = await createServer({
     root: path.join(work, 'app'), configFile: false, logLevel: 'error',
-    server: { host: '127.0.0.1', port: 0, watch: { usePolling: control === 'polling' } },
+    server: { host: '127.0.0.1', port: 0, fs: { allow: [work] }, watch: { usePolling: control === 'polling' } },
   })
   let stale = 0
   let reused = 0

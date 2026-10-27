@@ -11,6 +11,9 @@ jobs:
     env:
       PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: '1'
       SIMPLE_GIT_HOOKS: '0'
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -30,11 +33,24 @@ jobs:
       - name: Build Vite JavaScript
         run: pnpm --filter vite build-bundle
       - name: Verify real regression and controls
+        env:
+          REPRO_TMPDIR: ${{ github.workspace }}
         run: node investigation/verify.mjs 2>&1 | tee reproduction.log
+      - name: Verify deterministic regression fails before fix
+        run: |
+          set +e
+          pnpm test-unit packages/vite/src/node/server/__tests__/watcher-inode.spec.ts > regression.log 2>&1
+          result=$?
+          set -e
+          cat regression.log
+          test "$result" -eq 1
+          grep -F 'native watcher must stay attached after inode reuse' regression.log
       - name: Existing watcher tests
         run: pnpm test-unit packages/vite/src/node/server/__tests__/watcher.spec.ts
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: inode-reuse-evidence
-          path: reproduction.log
+          path: |
+            reproduction.log
+            regression.log

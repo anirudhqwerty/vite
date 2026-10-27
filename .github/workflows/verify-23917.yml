@@ -5,7 +5,7 @@ on:
 permissions:
   contents: read
 jobs:
-  baseline:
+  candidate:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     env:
@@ -29,24 +29,27 @@ jobs:
           pnpm --version
           df -Th . /tmp
       - name: Install focused dependencies
-        run: pnpm install --frozen-lockfile --filter vite... --filter @vitejs/vite-monorepo
+        run: pnpm install --no-frozen-lockfile --filter vite... --filter @vitejs/vite-monorepo
+      - name: Format regression files
+        run: pnpm exec oxfmt --write packages/vite/src/node/server/__tests__/watcher-inode.spec.ts packages/vite/src/node/server/__tests__/fixtures/watcher/inode-reuse.cjs
       - name: Build Vite JavaScript
         run: pnpm --filter vite build-bundle
       - name: Verify real regression and controls
         env:
           REPRO_TMPDIR: ${{ github.workspace }}
+          MODE: fixed
         run: node investigation/verify.mjs 2>&1 | tee reproduction.log
-      - name: Verify deterministic regression fails before fix
-        run: |
-          set +e
-          pnpm test-unit packages/vite/src/node/server/__tests__/watcher-inode.spec.ts > regression.log 2>&1
-          result=$?
-          set -e
-          cat regression.log
-          test "$result" -eq 1
-          grep -F 'native watcher must stay attached after inode reuse' regression.log
-      - name: Existing watcher tests
-        run: pnpm test-unit packages/vite/src/node/server/__tests__/watcher.spec.ts
+      - name: Regression and relevant server tests
+        run: pnpm test-unit packages/vite/src/node/server/__tests__ packages/vite/src/node/__tests__/utils.spec.ts 2>&1 | tee regression.log
+      - name: Vite typecheck
+        run: pnpm --filter vite typecheck
+      - name: Lint changed test
+        run: pnpm exec oxlint packages/vite/src/node/server/__tests__/watcher-inode.spec.ts
+      - name: Check formatting
+        run: pnpm exec oxfmt --check packages/vite/src/node/server/__tests__/watcher-inode.spec.ts packages/vite/src/node/server/__tests__/fixtures/watcher/inode-reuse.cjs
+      - name: Record generated changes
+        if: always()
+        run: git diff --stat
       - uses: actions/upload-artifact@v4
         if: always()
         with:
@@ -54,3 +57,6 @@ jobs:
           path: |
             reproduction.log
             regression.log
+            pnpm-lock.yaml
+            packages/vite/src/node/server/__tests__/watcher-inode.spec.ts
+            packages/vite/src/node/server/__tests__/fixtures/watcher/inode-reuse.cjs

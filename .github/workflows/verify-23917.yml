@@ -22,6 +22,7 @@ jobs:
         with:
           runtime: node@24
           cache: true
+          install: false
       - name: Record revision and tools
         run: |
           git rev-parse HEAD

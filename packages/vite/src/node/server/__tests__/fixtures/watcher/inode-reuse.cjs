@@ -42,6 +42,8 @@ async function test() {
     fs.writeFileSync(file, 'replacement')
     assert.notEqual(fs.statSync(file).birthtimeMs, birthtime)
     await expectChange('replacement', 'replacement must be detected')
+    // Avoid testing chokidar's separate rapid-save throttle behavior.
+    await sleep(100)
     fs.writeFileSync(file, 'edited after replacement')
     await expectChange(
       'edited after replacement',
